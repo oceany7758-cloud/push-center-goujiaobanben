@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户匹配配置 - 消息推送中心</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --sidebar-bg: #1e2a3a;
+    --sidebar-hover: #263548;
+    --sidebar-active: #2a4a6b;
+    --sidebar-text: #a0aec0;
+    --sidebar-text-active: #ffffff;
+    --card-bg: #ffffff;
+    --border: #e8ecf1;
+    --text-primary: #1a202c;
+    --text-secondary: #4a5568;
+    --text-muted: #a0aec0;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-light: #eff6ff;
+    --success: #10b981;
+    --success-light: #ecfdf5;
+    --success-border: #a7f3d0;
+    --warning: #f59e0b;
+    --warning-light: #fffbeb;
+    --warning-border: #fde68a;
+    --danger: #ef4444;
+    --danger-light: #fef2f2;
+    --danger-border: #fecaca;
+    --tag-bg: #f0f4f8;
+    --header-height: 56px;
+    --sidebar-width: 220px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text-primary); line-height: 1.5; overflow-x: hidden;
+  }
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--header-height);
+    background: #fff; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; z-index: 100;
+  }
+  .header-brand { display: flex; align-items: center; gap: 10px; width: var(--sidebar-width); flex-shrink: 0; }
+  .header-brand-icon {
+    width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 14px;
+  }
+  .header-brand-name { font-size: 16px; font-weight: 600; }
+  .header-nav { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .header-nav-item {
+    padding: 8px 16px; border-radius: 8px; font-size: 14px;
+    color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
+  }
+  .header-nav-item:hover { background: var(--bg); }
+  .header-nav-item.active { color: var(--accent); background: var(--accent-light); font-weight: 500; }
+  .header-search { margin-left: auto; position: relative; }
+  .header-search input {
+    width: 240px; height: 36px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 14px 0 36px; font-size: 13px; background: var(--bg); outline: none;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .header-search input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+  .header-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+  .header-user {
+    margin-left: 16px; display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s;
+  }
+  .header-user:hover { background: var(--bg); }
+  .header-user-avatar {
+    width: 30px; height: 30px; background: linear-gradient(135deg, #f59e0b, #ef4444);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 600;
+  }
+  .header-user-info { line-height: 1.3; }
+  .header-user-name { font-size: 13px; font-weight: 500; }
+  .header-user-role { font-size: 11px; color: var(--text-muted); }
+  .sidebar {
+    position: fixed; top: var(--header-height); left: 0; bottom: 0; width: var(--sidebar-width);
+    background: var(--sidebar-bg); overflow-y: auto; z-index: 90; padding: 12px 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .sidebar-section-title {
+    font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 16px 20px 8px; font-weight: 600;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; padding: 9px 20px; font-size: 13px;
+    color: var(--sidebar-text); cursor: pointer; transition: all 0.15s; gap: 10px;
+    position: relative; margin: 1px 8px; border-radius: 6px;
+  }
+  .sidebar-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-active); }
+  .sidebar-item.active { background: var(--sidebar-active); color: var(--sidebar-text-active); }
+  .sidebar-item.active::before {
+    content: ''; position: absolute; left: -8px; top: 8px; bottom: 8px;
+    width: 3px; background: var(--accent); border-radius: 0 3px 3px 0;
+  }
+  .sidebar-item svg { flex-shrink: 0; opacity: 0.7; }
+  .sidebar-item.active svg { opacity: 1; }
+  .sidebar-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 20px; font-size: 13px; color: var(--sidebar-text);
+    cursor: pointer; margin: 1px 8px; border-radius: 6px; transition: all 0.15s; gap: 10px;
+  }
+  .sidebar-group-header:hover { background: var(--sidebar-hover); }
+  .sidebar-group-header .label { display: flex; align-items: center; gap: 10px; }
+  .sidebar-group-header .arrow { transition: transform 0.2s; font-size: 10px; opacity: 0.5; }
+  .sidebar-group-header.expanded .arrow { transform: rotate(90deg); }
+  .sidebar-sub { display: none; }
+  .sidebar-sub.expanded { display: block; }
+  .sidebar-sub .sidebar-item { padding-left: 48px; }
+  .main {
+    margin-left: var(--sidebar-width); margin-top: var(--header-height);
+    padding: 24px; min-height: calc(100vh - var(--header-height));
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .breadcrumb a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .sep { opacity: 0.4; }
+  .breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .page-header p { font-size: 13px; color: var(--text-secondary); }
+  .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    flex: 1; background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px;
+    display: flex; align-items: center; gap: 16px; transition: all 0.2s;
+  }
+  .stat-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.04); transform: translateY(-1px); }
+  .stat-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .stat-icon.total { background: #ede9fe; color: #7c3aed; }
+  .stat-icon.success { background: var(--success-light); color: var(--success); }
+  .stat-icon.fail { background: var(--warning-light); color: var(--warning); }
+  .stat-icon.expired { background: var(--danger-light); color: var(--danger); }
+  .stat-icon.unmatched { background: #f3f4f6; color: #6b7280; }
+  .stat-icon svg { width: 24px; height: 24px; }
+  .stat-info { flex: 1; }
+  .stat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .stat-count { font-size: 12px; color: var(--text-muted); }
+  .stat-bar { width: 60px; height: 6px; background: var(--tag-bg); border-radius: 3px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .stat-bar-fill.success { background: var(--success); }
+  .stat-bar-fill.fail { background: var(--warning); }
+  .stat-bar-fill.expired { background: var(--danger); }
+  .toolbar {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0; padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .search-input {
+    width: 220px; height: 36px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 12px; font-size: 13px; outline: none; transition: all 0.2s;
+    font-family: inherit; background: #fff;
+  }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+  .select-input {
+    height: 36px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 32px 0 12px; font-size: 13px; outline: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234a5568' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E") no-repeat right 10px center;
+    appearance: none; cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .select-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+  .btn {
+    height: 36px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); background: #fff; color: var(--text-primary);
+    cursor: pointer; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px; font-family: inherit; white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg); border-color: #d1d5db; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn-success:hover { background: #059669; border-color: #059669; }
+  .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #dc2626; border-color: #dc2626; }
+  .btn svg { width: 16px; height: 16px; }
+  .link-config {
+    font-size: 13px; color: var(--accent); cursor: pointer; font-weight: 500;
+    display: flex; align-items: center; gap: 4px; transition: color 0.15s;
+  }
+  .link-config:hover { color: var(--accent-hover); }
+  .table-container {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-top: none; border-radius: 0 0 12px 12px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: #f8fafc; padding: 12px 16px; font-size: 12px; font-weight: 600;
+    color: var(--text-secondary); text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 14px 16px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid #f1f5f9; }
+  tbody tr:last-child td { border-bottom: none; }
+  .col-checkbox { width: 44px; text-align: center; }
+  .checkbox {
+    width: 16px; height: 16px; border: 2px solid #d1d5db; border-radius: 4px;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s; vertical-align: middle;
+  }
+  .checkbox:hover { border-color: var(--accent); }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox.checked::after {
+    content: ''; width: 8px; height: 5px;
+    border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+  .td-muted { color: var(--text-muted); font-size: 12px; }
+  .td-dash { color: var(--text-muted); font-size: 13px; }
+
+  /* Tags */
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  }
+  .tag-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+  .tag-fail { background: var(--warning-light); color: #b45309; border: 1px solid var(--warning-border); }
+  .tag-expired { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); }
+  .tag-unmatched { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+  .tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .tag-success .tag-dot { background: var(--success); }
+  .tag-fail .tag-dot { background: var(--warning); }
+  .tag-expired .tag-dot { background: var(--danger); }
+  .tag-unmatched .tag-dot { background: #9ca3af; }
+
+  /* Tooltip */
+  .status-cell { display: flex; align-items: center; gap: 6px; }
+  .tooltip-wrap { position: relative; display: inline-flex; align-items: center; }
+  .tooltip-icon {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #e5e7eb; color: #6b7280;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: help; font-size: 10px; font-weight: 700;
+    transition: all 0.15s; flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+  .tooltip-icon:hover { background: var(--danger-light); color: var(--danger); }
+  .tooltip-bubble {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: var(--text-primary); color: #fff;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 400;
+    white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity 0.2s; z-index: 50;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .tooltip-bubble::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: var(--text-primary);
+  }
+  .tooltip-wrap:hover .tooltip-bubble { opacity: 1; }
+
+  /* Action links */
+  .action-links { display: flex; align-items: center; gap: 4px; }
+  .action-link {
+    font-size: 13px; color: var(--accent); cursor: pointer;
+    padding: 2px 6px; border-radius: 4px; transition: all 0.15s; text-decoration: none;
+  }
+  .action-link:hover { background: var(--accent-light); color: var(--accent-hover); }
+  .action-link.danger { color: var(--danger); }
+  .action-link.danger:hover { background: var(--danger-light); }
+
+  .table-footer {
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid #f1f5f9; background: #fafbfc;
+  }
+  .table-footer-info { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 16px; }
+  .table-footer-info .sep { width: 1px; height: 14px; background: var(--border); }
+  .table-footer-info .count { font-weight: 600; color: var(--text-primary); }
+  .pagination { display: flex; align-items: center; gap: 8px; }
+  .page-btn {
+    height: 32px; padding: 0 14px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; font-size: 13px; color: var(--text-secondary);
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .page-btn:disabled:hover { border-color: var(--border); color: var(--text-secondary); }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #fff; border-radius: 16px; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15); animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    width: 32px; height: 32px; border: none; background: none; border-radius: 8px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); transition: all 0.15s; font-size: 18px;
+  }
+  .modal-close:hover { background: var(--bg); color: var(--text-primary); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 0 24px 20px; display: flex; justify-content: flex-end; gap: 8px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .form-value {
+    width: 100%; height: 40px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 12px; font-size: 13px; background: #f8fafc;
+    display: flex; align-items: center; color: var(--text-primary);
+  }
+
+  /* Confirm modal */
+  .confirm-modal .modal { width: 420px; }
+  .confirm-body { display: flex; gap: 14px; align-items: flex-start; }
+  .confirm-icon {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--warning-light); color: var(--warning);
+  }
+  .confirm-content { flex: 1; }
+  .confirm-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .confirm-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .confirm-user {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--tag-bg); padding: 3px 10px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; margin: 8px 0;
+  }
+
+  /* Org tree modal */
+  .org-modal .modal { width: 560px; }
+  .org-search-wrap { position: relative; margin-bottom: 16px; }
+  .org-search-wrap input {
+    width: 100%; height: 38px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 12px 0 36px; font-size: 13px; outline: none; transition: all 0.2s; font-family: inherit;
+  }
+  .org-search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+  .org-search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+  .org-tree { border: 1px solid var(--border); border-radius: 8px; max-height: 360px; overflow-y: auto; }
+  .org-tree::-webkit-scrollbar { width: 6px; }
+  .org-tree::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+  .org-node { user-select: none; }
+  .org-node-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; font-size: 13px; cursor: pointer;
+    transition: background 0.1s; border-bottom: 1px solid #f5f5f5;
+  }
+  .org-node-row:last-child { border-bottom: none; }
+  .org-node-row:hover { background: #f8fafc; }
+  .org-node-row.selected { background: var(--accent-light); }
+  .org-arrow {
+    width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: var(--text-muted); transition: transform 0.2s; font-size: 10px;
+  }
+  .org-arrow.expanded { transform: rotate(90deg); }
+  .org-arrow.placeholder { visibility: hidden; }
+  .org-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .org-icon.dept { color: var(--accent); }
+  .org-icon.person { color: var(--success); }
+  .org-name { flex: 1; }
+  .org-node-row .org-dept-tag {
+    font-size: 11px; color: var(--text-muted); background: var(--tag-bg);
+    padding: 1px 6px; border-radius: 3px;
+  }
+  .org-radio {
+    width: 16px; height: 16px; border: 2px solid #d1d5db; border-radius: 50%;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .org-radio.checked { border-color: var(--accent); }
+  .org-radio.checked::after { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+  .org-children { display: none; }
+  .org-children.expanded { display: block; }
+  .org-selected-info {
+    margin-top: 12px; padding: 10px 14px;
+    background: var(--accent-light); border: 1px solid #bfdbfe;
+    border-radius: 8px; font-size: 13px; display: none; align-items: center; gap: 8px;
+  }
+  .org-selected-info.visible { display: flex; }
+  .org-selected-info .label { color: var(--text-secondary); }
+  .org-selected-info .value { font-weight: 600; color: var(--accent); }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 72px; right: 24px; z-index: 300;
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    display: none; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 500;
+  }
+  .toast.active { display: flex; animation: toastIn 0.3s ease; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  .toast-icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .toast-success .toast-icon { background: var(--success-light); color: var(--success); }
+  .toast-warning .toast-icon { background: var(--warning-light); color: var(--warning); }
+
+  @media (max-width: 1200px) { .stats-row { flex-wrap: wrap; } .stat-card { min-width: 160px; } }
+  @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-brand">
+    <div class="header-brand-icon">税</div>
+    <span class="header-brand-name">乐享智税</span>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item">工作台</div>
+    <div class="header-nav-item active">平台管理</div>
+  </nav>
+  <div class="header-search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="应用/菜单搜索">
+  </div>
+  <div class="header-user">
+    <div class="header-user-avatar">周</div>
+    <div class="header-user-info">
+      <div class="header-user-name">周经理</div>
+      <div class="header-user-role">平台管理员</div>
+    </div>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-section-title">管理平台</div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    组织管理
+  </div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    权限管理
+  </div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    运维管理
+  </div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    公告管理
+  </div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    订阅管理
+  </div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    数据可视化
+  </div>
+  <div class="sidebar-group-header expanded" onclick="toggleGroup(this)">
+    <span class="label">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      消息推送中心
+    </span>
+    <span class="arrow">▶</span>
+  </div>
+  <div class="sidebar-sub expanded">
+    <div class="sidebar-item active" style="padding-left:48px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      用户匹配配置
+    </div>
+    <div class="sidebar-item" style="padding-left:48px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      推送偏好配置
+    </div>
+  </div>
+  <div class="sidebar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    推送管理
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+  <div class="breadcrumb">
+    <a href="#">管理平台</a><span class="sep">/</span>
+    <a href="#">消息推送中心</a><span class="sep">/</span>
+    <span class="current">用户匹配配置</span>
+  </div>
+  <div class="page-header">
+    <h1>用户匹配配置</h1>
+    <p>管理平台用户与渠道用户的映射关系</p>
+  </div>
+
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <input type="text" class="search-input" placeholder="搜索SAAS用户姓名">
+      <select class="select-input">
+        <option value="">全部状态</option>
+        <option value="success">匹配成功</option>
+        <option value="fail">匹配失败</option>
+        <option value="expired">匹配失效</option>
+        <option value="unmatched">未匹配</option>
+      </select>
+      <button class="btn btn-primary" onclick="showToast('查询完成','success')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        查询
+      </button>
+      <span class="link-config" onclick="openMatchConfig()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        匹配方式配置
+      </span>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn" onclick="showToast('手工同步完成','success')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        手工同步
+      </button>
+      <button class="btn btn-success" onclick="handleBatchMatch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        执行匹配
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-checkbox"><div class="checkbox" id="selectAll" onclick="toggleSelectAll()"></div></th>
+          <th>SAAS用户姓名</th>
+          <th>SAAS手机号</th>
+          <th>外部渠道用户姓名</th>
+          <th>外部渠道手机号</th>
+          <th>外部渠道工号</th>
+          <th>匹配状态</th>
+          <th>同步时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="table-footer">
+      <div class="table-footer-info">
+        <span>共 <span class="count">6</span> 条记录</span>
+        <span class="sep"></span>
+        <span>匹配成功 <span class="count">2</span> 条</span>
+        <span class="sep"></span>
+        <span>匹配失败 <span class="count">2</span> 条</span>
+        <span class="sep"></span>
+        <span>匹配失效 <span class="count">2</span> 条</span>
+        <span class="sep"></span>
+        <span>未匹配 <span class="count">1</span> 条</span>
+      </div>
+      <div class="pagination">
+        <button class="page-btn" disabled>上一页</button>
+        <button class="page-btn" disabled>下一页</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- 解绑确认弹窗 -->
+<div class="modal-overlay confirm-modal" id="unbindModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>确认解绑</h3>
+      <button class="modal-close" onclick="closeModal('unbindModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-body">
+        <div class="confirm-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="confirm-content">
+          <div class="confirm-title">确定要解除该用户的渠道映射关系吗？</div>
+          <div class="confirm-desc">解绑后，该用户将无法通过外部渠道接收消息推送，如需恢复需要重新进行匹配。</div>
+          <div class="confirm-user" id="unbindUserInfo"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('unbindModal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmUnbind()">确认解绑</button>
+    </div>
+  </div>
+</div>
+
+<!-- 指定外部渠道用户弹窗 -->
+<div class="modal-overlay org-modal" id="orgModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>指定外部渠道用户</h3>
+      <button class="modal-close" onclick="closeModal('orgModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="org-search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="搜索人员姓名" id="orgSearchInput" oninput="filterOrgTree(this.value)">
+      </div>
+      <div class="org-tree" id="orgTree"></div>
+      <div class="org-selected-info" id="orgSelectedInfo">
+        <span class="label">已选择：</span>
+        <span class="value" id="orgSelectedName"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('orgModal')">取消</button>
+      <button class="btn btn-primary" id="orgConfirmBtn" onclick="confirmOrgSelect()" disabled>确认选择</button>
+    </div>
+  </div>
+</div>
+
+<!-- 匹配方式配置弹窗 -->
+<div class="modal-overlay" id="matchConfigModal">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <h3>匹配方式配置</h3>
+      <button class="modal-close" onclick="closeModal('matchConfigModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">优先匹配字段</label>
+        <div class="form-value">手机号</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">匹配说明</label>
+        <div class="form-value">通过手机号自动匹配外部渠道用户</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('matchConfigModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-icon">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <span id="toastText">操作成功</span>
+</div>
+
+<script>
+  // ── 表格数据 ──
+  // status: 'success' = 匹配成功, 'fail' = 匹配失败, 'expired' = 匹配失效, 'unmatched' = 未匹配
+  const tableData = [
+    { id: 1, saasName: '张三', saasMobile: '138****0001', extName: '张三', extMobile: '138****1234', extWorkno: 'D001', status: 'success', syncTime: '2026-07-01 14:30:22' },
+    { id: 2, saasName: '李四', saasMobile: '139****0002', extName: '李四', extMobile: '139****5678', extWorkno: 'D002', status: 'success', syncTime: '2026-07-01 10:15:47' },
+    { id: 3, saasName: '王五', saasMobile: '137****0003', extName: null, extMobile: null, extWorkno: null, status: 'fail', failReason: '外部渠道未找到匹配用户', syncTime: '2026-06-30 18:42:05' },
+    { id: 4, saasName: '赵六', saasMobile: '136****0004', extName: '赵六', extMobile: '137****9012', extWorkno: 'D004', status: 'expired', syncTime: '2026-06-28 09:20:33' },
+    { id: 5, saasName: '钱七', saasMobile: '135****0005', extName: null, extMobile: null, extWorkno: null, status: 'fail', failReason: '手机号不一致', syncTime: '2026-06-29 22:11:58' },
+    { id: 6, saasName: '孙八', saasMobile: '134****0006', extName: '孙八', extMobile: '134****3456', extWorkno: 'D006', status: 'expired', syncTime: '2026-06-27 16:05:19' },
+    { id: 7, saasName: '周九', saasMobile: '133****0007', extName: null, extMobile: null, extWorkno: null, status: 'unmatched', syncTime: '' },
+  ];
+
+  // 按同步时间倒序排列
+  tableData.sort((a, b) => (b.syncTime || "").localeCompare(a.syncTime || ""));
+  function formatNow() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " +
+           pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }
+
+  let selectedIds = new Set();
+  let currentUnbindId = null;
+  let currentAssignId = null;
+  let selectedOrgPerson = null;
+
+  // ── 状态渲染 ──
+  function renderStatusTag(row) {
+    const status = row.status;
+    if (status === 'success') {
+      return '<span class="tag tag-success"><span class="tag-dot"></span>匹配成功</span>';
+    }
+    if (status === 'fail') {
+      return '<span class="tag tag-fail"><span class="tag-dot"></span>匹配失败</span>' +
+        (row.failReason ? '<span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-bubble">' + row.failReason + '</span></span>' : '');
+    }
+    if (status === 'expired') {
+      return '<span class="tag tag-expired"><span class="tag-dot"></span>匹配失效</span>' +
+        '<span class="tooltip-wrap">' +
+          '<span class="tooltip-icon">?</span>' +
+          '<span class="tooltip-bubble">员工已离职或其他原因</span>' +
+        '</span>';
+    }
+    if (status === 'unmatched') {
+      return '<span class="tag tag-unmatched"><span class="tag-dot"></span>未匹配</span>';
+    }
+    return '';
+  }
+
+  // ── 操作按钮渲染 ──
+  function renderActions(row) {
+    if (row.status === 'success') {
+      // 匹配成功 → 解绑
+      return '<a class="action-link danger" onclick="openUnbindModal(' + row.id + ')">解绑</a>';
+    }
+    if (row.status === 'fail' || row.status === 'expired' || row.status === 'unmatched') {
+      // 匹配失败 / 匹配失效 / 未匹配 → 指定外部渠道用户
+      return '<a class="action-link" onclick="openOrgModal(' + row.id + ')">指定外部渠道用户</a>';
+    }
+    return '';
+  }
+
+  // ── 渲染表格 ──
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = tableData.map(row => {
+      const isSelected = selectedIds.has(row.id);
+      return '<tr>' +
+        '<td class="col-checkbox"><div class="checkbox ' + (isSelected ? 'checked' : '') + '" onclick="toggleSelect(' + row.id + ')"></div></td>' +
+        '<td>' + row.saasName + '</td>' +
+        '<td class="td-muted">' + row.saasMobile + '</td>' +
+        '<td>' + (row.extName || '<span class="td-dash">—</span>') + '</td>' +
+        '<td class="td-muted">' + (row.extMobile || '<span class="td-dash">—</span>') + '</td>' +
+        '<td class="td-muted">' + (row.extWorkno || '<span class="td-dash">—</span>') + '</td>' +
+        '<td><div class="status-cell">' + renderStatusTag(row) + '</div></td>' +
+        '<td class="td-muted">' + (row.syncTime || '<span class="td-dash">—</span>') + '</td>' +
+        '<td><div class="action-links">' + renderActions(row) + '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ── 复选框 ──
+  function toggleSelect(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+    renderTable();
+    updateSelectAllState();
+  }
+  function toggleSelectAll() {
+    if (selectedIds.size === tableData.length) selectedIds.clear();
+    else tableData.forEach(r => selectedIds.add(r.id));
+    renderTable();
+    updateSelectAllState();
+  }
+  function updateSelectAllState() {
+    const el = document.getElementById('selectAll');
+    el.classList.toggle('checked', selectedIds.size === tableData.length && tableData.length > 0);
+  }
+
+  // ── 解绑弹窗 ──
+  function openUnbindModal(id) {
+    currentUnbindId = id;
+    const row = tableData.find(r => r.id === id);
+    document.getElementById('unbindUserInfo').innerHTML =
+      'SAAS用户：' + row.saasName + '（' + row.saasMobile + '） → 外部渠道：' + row.extName + '（' + row.extMobile + '）';
+    document.getElementById('unbindModal').classList.add('active');
+  }
+  function confirmUnbind() {
+    const row = tableData.find(r => r.id === currentUnbindId);
+    if (row) {
+      row.extName = null; row.extMobile = null; row.extWorkno = null;
+      row.status = 'fail';
+      row.syncTime = formatNow();
+    }
+    closeModal('unbindModal');
+    currentUnbindId = null;
+    renderTable();
+    showToast('已解除匹配关系', 'success');
+  }
+
+  // ── 组织架构数据 ──
+  const orgData = {
+    id: 'root', name: '福建博思软件股份有限公司', type: 'company',
+    children: [
+      { id: 'd1', name: '公共平台', type: 'dept', children: [
+        { id: 'p1', name: '陈航', type: 'person', dept: '公共平台' },
+        { id: 'p2', name: '刘少华', type: 'person', dept: '公共平台' },
+      ]},
+      { id: 'd2', name: '博思高管', type: 'dept', children: [
+        { id: 'p3', name: '林峰', type: 'person', dept: '博思高管' },
+        { id: 'p4', name: '陈明', type: 'person', dept: '博思高管' },
+      ]},
+      { id: 'd3', name: '证券管理部', type: 'dept', children: [
+        { id: 'p5', name: '黄磊', type: 'person', dept: '证券管理部' },
+        { id: 'p6', name: '周涛', type: 'person', dept: '证券管理部' },
+      ]},
+      { id: 'd4', name: '审计部', type: 'dept', children: [
+        { id: 'p7', name: '吴刚', type: 'person', dept: '审计部' },
+      ]},
+      { id: 'd5', name: '人力资源中心', type: 'dept', children: [
+        { id: 'p8', name: '郑丽', type: 'person', dept: '人力资源中心' },
+        { id: 'p9', name: '王芳', type: 'person', dept: '人力资源中心' },
+      ]},
+      { id: 'd6', name: '财务中心', type: 'dept', children: [
+        { id: 'p10', name: '李伟', type: 'person', dept: '财务中心' },
+        { id: 'p11', name: '张敏', type: 'person', dept: '财务中心' },
+      ]},
+    ]
+  };
+
+  // ── 组织架构弹窗 ──
+  function openOrgModal(id) {
+    currentAssignId = id;
+    selectedOrgPerson = null;
+    document.getElementById('orgSearchInput').value = '';
+    document.getElementById('orgSelectedInfo').classList.remove('visible');
+    document.getElementById('orgConfirmBtn').disabled = true;
+    renderOrgTree(orgData, '');
+    document.getElementById('orgModal').classList.add('active');
+  }
+
+  function renderOrgTree(node, searchText) {
+    document.getElementById('orgTree').innerHTML = buildOrgNodeHTML(node, 0, searchText.toLowerCase());
+    bindOrgEvents();
+  }
+
+  function buildOrgNodeHTML(node, depth, searchText) {
+    const isDept = node.type === 'dept' || node.type === 'company';
+    const hasChildren = node.children && node.children.length > 0;
+    const paddingLeft = depth * 20;
+
+    if (searchText && isDept && !hasDescendantMatch(node, searchText)) return '';
+
+    let html = '<div class="org-node" data-id="' + node.id + '" data-type="' + node.type + '"' +
+      (node.type === 'person' ? ' data-name="' + node.name + '" data-dept="' + (node.dept || '') + '"' : '') + '>';
+
+    html += '<div class="org-node-row" style="padding-left:' + (paddingLeft + 12) + 'px" data-id="' + node.id + '">';
+
+    if (isDept && hasChildren) {
+      html += '<span class="org-arrow' + (searchText ? ' expanded' : '') + '" data-id="' + node.id + '">▶</span>';
+    } else {
+      html += '<span class="org-arrow placeholder">▶</span>';
+    }
+
+    if (isDept) {
+      html += '<span class="org-icon dept"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>';
+    } else {
+      html += '<span class="org-icon person"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>';
+    }
+
+    html += '<span class="org-name">' + highlightText(node.name, searchText) + '</span>';
+
+    if (node.type === 'person') {
+      html += '<span class="org-dept-tag">' + (node.dept || '') + '</span>';
+      html += '<span class="org-radio" data-person-id="' + node.id + '"></span>';
+    }
+
+    html += '</div>';
+
+    if (hasChildren) {
+      html += '<div class="org-children' + (searchText ? ' expanded' : '') + '" data-parent="' + node.id + '">';
+      node.children.forEach(child => { html += buildOrgNodeHTML(child, depth + 1, searchText); });
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function hasDescendantMatch(node, searchText) {
+    if (node.name.toLowerCase().includes(searchText)) return true;
+    if (node.children) return node.children.some(child => hasDescendantMatch(child, searchText));
+    return false;
+  }
+
+  function highlightText(text, searchText) {
+    if (!searchText) return text;
+    const idx = text.toLowerCase().indexOf(searchText);
+    if (idx === -1) return text;
+    return text.substring(0, idx) +
+      '<strong style="background:#fef08a;padding:0 2px;border-radius:2px">' +
+      text.substring(idx, idx + searchText.length) + '</strong>' +
+      text.substring(idx + searchText.length);
+  }
+
+  function bindOrgEvents() {
+    document.querySelectorAll('#orgTree .org-arrow:not(.placeholder)').forEach(arrow => {
+      arrow.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const id = this.getAttribute('data-id');
+        this.classList.toggle('expanded');
+        const children = document.querySelector('.org-children[data-parent="' + id + '"]');
+        if (children) children.classList.toggle('expanded');
+      });
+    });
+    document.querySelectorAll('#orgTree .org-node-row').forEach(row => {
+      row.addEventListener('click', function() {
+        const node = this.closest('.org-node');
+        if (node.getAttribute('data-type') === 'person') {
+          selectOrgPerson(node);
+        } else {
+          const arrow = this.querySelector('.org-arrow:not(.placeholder)');
+          if (arrow) arrow.click();
+        }
+      });
+    });
+  }
+
+  function selectOrgPerson(node) {
+    document.querySelectorAll('#orgTree .org-node-row.selected').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#orgTree .org-radio.checked').forEach(el => el.classList.remove('checked'));
+    node.querySelector('.org-node-row').classList.add('selected');
+    node.querySelector('.org-radio').classList.add('checked');
+    selectedOrgPerson = { id: node.getAttribute('data-id'), name: node.getAttribute('data-name'), dept: node.getAttribute('data-dept') };
+    document.getElementById('orgSelectedName').textContent = selectedOrgPerson.name + '（' + selectedOrgPerson.dept + '）';
+    document.getElementById('orgSelectedInfo').classList.add('visible');
+    document.getElementById('orgConfirmBtn').disabled = false;
+  }
+
+  function filterOrgTree(value) { renderOrgTree(orgData, value.trim()); }
+
+  function confirmOrgSelect() {
+    if (!selectedOrgPerson || !currentAssignId) return;
+    const row = tableData.find(r => r.id === currentAssignId);
+    if (row) {
+      row.extName = selectedOrgPerson.name;
+      row.extMobile = '—';
+      row.extWorkno = '—';
+      row.status = 'success';
+      row.syncTime = formatNow();
+    }
+    const name = row ? row.extName : '';
+    closeModal('orgModal');
+    currentAssignId = null;
+    selectedOrgPerson = null;
+    renderTable();
+    showToast('已指定外部渠道用户：' + name, 'success');
+  }
+
+  // ── 通用 ──
+  function handleBatchMatch() {
+    if (selectedIds.size === 0) { showToast('请先选择需要匹配的用户','warning'); return; }
+    const matchable = tableData.filter(r => selectedIds.has(r.id) && r.status !== 'success');
+    if (matchable.length === 0) { showToast('所选用户均已匹配成功，无需处理','warning'); return; }
+    showToast('正在对 ' + matchable.length + ' 条用户执行匹配...', 'success');
+  }
+
+  function openMatchConfig() { document.getElementById('matchConfigModal').classList.add('active'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  ['unbindModal', 'orgModal', 'matchConfigModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) { if (e.target === this) closeModal(id); });
+  });
+
+  function showToast(text, type) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastText').textContent = text;
+    toast.className = 'toast toast-' + (type || 'success') + ' active';
+    setTimeout(() => toast.classList.remove('active'), 2500);
+  }
+
+  function toggleGroup(el) {
+    el.classList.toggle('expanded');
+    el.nextElementSibling.classList.toggle('expanded');
+  }
+
+  renderTable();
+</script>
+</body>
+</html>
