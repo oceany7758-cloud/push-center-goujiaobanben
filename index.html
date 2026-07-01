@@ -352,37 +352,32 @@
   .org-tree { border: 1px solid var(--border); border-radius: 8px; max-height: 360px; overflow-y: auto; }
   .org-tree::-webkit-scrollbar { width: 6px; }
   .org-tree::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-  .org-node { user-select: none; }
-  .org-node-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; font-size: 13px; cursor: pointer;
-    transition: background 0.1s; border-bottom: 1px solid #f5f5f5;
+  .org-empty { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 13px; }
+  .org-empty svg { margin-bottom: 8px; opacity: 0.4; }
+  .person-card-list { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; }
+  .person-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px;
+    cursor: pointer; transition: all 0.15s; background: #fff;
   }
-  .org-node-row:last-child { border-bottom: none; }
-  .org-node-row:hover { background: #f8fafc; }
-  .org-node-row.selected { background: var(--accent-light); }
-  .org-arrow {
-    width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; color: var(--text-muted); transition: transform 0.2s; font-size: 10px;
+  .person-card:hover { border-color: var(--accent); background: #f8faff; }
+  .person-card.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  .person-card-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; font-weight: 600; flex-shrink: 0;
   }
-  .org-arrow.expanded { transform: rotate(90deg); }
-  .org-arrow.placeholder { visibility: hidden; }
-  .org-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-  .org-icon.dept { color: var(--accent); }
-  .org-icon.person { color: var(--success); }
-  .org-name { flex: 1; }
-  .org-node-row .org-dept-tag {
-    font-size: 11px; color: var(--text-muted); background: var(--tag-bg);
-    padding: 1px 6px; border-radius: 3px;
-  }
-  .org-radio {
-    width: 16px; height: 16px; border: 2px solid #d1d5db; border-radius: 50%;
+  .person-card-info { flex: 1; min-width: 0; }
+  .person-card-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .person-card-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); }
+  .person-card-meta span { display: flex; align-items: center; gap: 4px; }
+  .person-card-check {
+    width: 20px; height: 20px; border: 2px solid #d1d5db; border-radius: 50%;
     flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
   }
-  .org-radio.checked { border-color: var(--accent); }
-  .org-radio.checked::after { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
-  .org-children { display: none; }
-  .org-children.expanded { display: block; }
+  .person-card.selected .person-card-check { border-color: var(--accent); background: var(--accent); }
+  .person-card.selected .person-card-check::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
   .org-selected-info {
     margin-top: 12px; padding: 10px 14px;
     background: var(--accent-light); border: 1px solid #bfdbfe;
@@ -391,6 +386,8 @@
   .org-selected-info.visible { display: flex; }
   .org-selected-info .label { color: var(--text-secondary); }
   .org-selected-info .value { font-weight: 600; color: var(--accent); }
+  .org-hint { margin-top: 8px; font-size: 12px; color: var(--danger); display: none; }
+  .org-hint.visible { display: block; }
 
   /* Toast */
   .toast {
@@ -607,17 +604,23 @@
     <div class="modal-body">
       <div class="org-search-wrap">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" placeholder="搜索人员姓名" id="orgSearchInput" oninput="filterOrgTree(this.value)">
+        <input type="text" placeholder="输入手机号搜索人员" id="orgSearchInput" oninput="searchPersonByPhone(this.value)">
       </div>
-      <div class="org-tree" id="orgTree"></div>
+      <div class="person-card-list" id="personCardList">
+        <div class="org-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div>请输入手机号搜索人员</div>
+        </div>
+      </div>
       <div class="org-selected-info" id="orgSelectedInfo">
         <span class="label">已选择：</span>
         <span class="value" id="orgSelectedName"></span>
       </div>
+      <div class="org-hint" id="orgHint">⚠ 请先选择一位人员</div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('orgModal')">取消</button>
-      <button class="btn btn-primary" id="orgConfirmBtn" onclick="confirmOrgSelect()" disabled>确认选择</button>
+      <button class="btn btn-primary" id="orgConfirmBtn" onclick="confirmOrgSelect()">确认选择</button>
     </div>
   </div>
 </div>
@@ -773,153 +776,101 @@
     showToast('已解除匹配关系', 'success');
   }
 
-  // ── 组织架构数据 ──
-  const orgData = {
-    id: 'root', name: '福建博思软件股份有限公司', type: 'company',
-    children: [
-      { id: 'd1', name: '公共平台', type: 'dept', children: [
-        { id: 'p1', name: '陈航', type: 'person', dept: '公共平台' },
-        { id: 'p2', name: '刘少华', type: 'person', dept: '公共平台' },
-      ]},
-      { id: 'd2', name: '博思高管', type: 'dept', children: [
-        { id: 'p3', name: '林峰', type: 'person', dept: '博思高管' },
-        { id: 'p4', name: '陈明', type: 'person', dept: '博思高管' },
-      ]},
-      { id: 'd3', name: '证券管理部', type: 'dept', children: [
-        { id: 'p5', name: '黄磊', type: 'person', dept: '证券管理部' },
-        { id: 'p6', name: '周涛', type: 'person', dept: '证券管理部' },
-      ]},
-      { id: 'd4', name: '审计部', type: 'dept', children: [
-        { id: 'p7', name: '吴刚', type: 'person', dept: '审计部' },
-      ]},
-      { id: 'd5', name: '人力资源中心', type: 'dept', children: [
-        { id: 'p8', name: '郑丽', type: 'person', dept: '人力资源中心' },
-        { id: 'p9', name: '王芳', type: 'person', dept: '人力资源中心' },
-      ]},
-      { id: 'd6', name: '财务中心', type: 'dept', children: [
-        { id: 'p10', name: '李伟', type: 'person', dept: '财务中心' },
-        { id: 'p11', name: '张敏', type: 'person', dept: '财务中心' },
-      ]},
-    ]
-  };
+  // ── 人员搜索数据 ──
+  const personData = [
+    { id: 'p1', name: '陈航', phone: '13800001001', workno: 'BS001', dept: '公共平台' },
+    { id: 'p2', name: '刘少华', phone: '13800001002', workno: 'BS002', dept: '公共平台' },
+    { id: 'p3', name: '林峰', phone: '13900002001', workno: 'BS003', dept: '博思高管' },
+    { id: 'p4', name: '陈明', phone: '13900002002', workno: 'BS004', dept: '博思高管' },
+    { id: 'p5', name: '黄磊', phone: '13700003001', workno: 'BS005', dept: '证券管理部' },
+    { id: 'p6', name: '周涛', phone: '13700003002', workno: 'BS006', dept: '证券管理部' },
+    { id: 'p7', name: '吴刚', phone: '13600004001', workno: 'BS007', dept: '审计部' },
+    { id: 'p8', name: '郑丽', phone: '13500005001', workno: 'BS008', dept: '人力资源中心' },
+    { id: 'p9', name: '王芳', phone: '13500005002', workno: 'BS009', dept: '人力资源中心' },
+    { id: 'p10', name: '李伟', phone: '13400006001', workno: 'BS010', dept: '财务中心' },
+    { id: 'p11', name: '张敏', phone: '13400006002', workno: 'BS011', dept: '财务中心' },
+  ];
 
-  // ── 组织架构弹窗 ──
+  // ── 人员搜索弹窗 ──
   function openOrgModal(id) {
     currentAssignId = id;
     selectedOrgPerson = null;
     document.getElementById('orgSearchInput').value = '';
     document.getElementById('orgSelectedInfo').classList.remove('visible');
-    document.getElementById('orgConfirmBtn').disabled = true;
-    renderOrgTree(orgData, '');
+    document.getElementById('orgHint').classList.remove('visible');
+    renderPersonCards([]);
     document.getElementById('orgModal').classList.add('active');
+    document.getElementById('orgSearchInput').focus();
   }
 
-  function renderOrgTree(node, searchText) {
-    document.getElementById('orgTree').innerHTML = buildOrgNodeHTML(node, 0, searchText.toLowerCase());
-    bindOrgEvents();
-  }
-
-  function buildOrgNodeHTML(node, depth, searchText) {
-    const isDept = node.type === 'dept' || node.type === 'company';
-    const hasChildren = node.children && node.children.length > 0;
-    const paddingLeft = depth * 20;
-
-    if (searchText && isDept && !hasDescendantMatch(node, searchText)) return '';
-
-    let html = '<div class="org-node" data-id="' + node.id + '" data-type="' + node.type + '"' +
-      (node.type === 'person' ? ' data-name="' + node.name + '" data-dept="' + (node.dept || '') + '"' : '') + '>';
-
-    html += '<div class="org-node-row" style="padding-left:' + (paddingLeft + 12) + 'px" data-id="' + node.id + '">';
-
-    if (isDept && hasChildren) {
-      html += '<span class="org-arrow' + (searchText ? ' expanded' : '') + '" data-id="' + node.id + '">▶</span>';
-    } else {
-      html += '<span class="org-arrow placeholder">▶</span>';
+  function searchPersonByPhone(value) {
+    const keyword = value.trim();
+    document.getElementById('orgHint').classList.remove('visible');
+    if (!keyword) {
+      renderPersonCards([]);
+      return;
     }
+    const results = personData.filter(p => p.phone.includes(keyword));
+    renderPersonCards(results, keyword);
+  }
 
-    if (isDept) {
-      html += '<span class="org-icon dept"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>';
-    } else {
-      html += '<span class="org-icon person"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>';
+  function renderPersonCards(list, keyword) {
+    const container = document.getElementById('personCardList');
+    if (!list || list.length === 0) {
+      container.innerHTML = '<div class="org-empty">' +
+        '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>' +
+        '<div>' + (keyword ? '未找到匹配的人员' : '请输入手机号搜索人员') + '</div></div>';
+      return;
     }
-
-    html += '<span class="org-name">' + highlightText(node.name, searchText) + '</span>';
-
-    if (node.type === 'person') {
-      html += '<span class="org-dept-tag">' + (node.dept || '') + '</span>';
-      html += '<span class="org-radio" data-person-id="' + node.id + '"></span>';
-    }
-
-    html += '</div>';
-
-    if (hasChildren) {
-      html += '<div class="org-children' + (searchText ? ' expanded' : '') + '" data-parent="' + node.id + '">';
-      node.children.forEach(child => { html += buildOrgNodeHTML(child, depth + 1, searchText); });
-      html += '</div>';
-    }
-    html += '</div>';
-    return html;
+    container.innerHTML = list.map(p => {
+      const isSelected = selectedOrgPerson && selectedOrgPerson.id === p.id;
+      const phoneHtml = keyword ? highlightPhone(p.phone, keyword) : p.phone;
+      return '<div class="person-card' + (isSelected ? ' selected' : '') + '" data-id="' + p.id + '" onclick="selectPersonCard(this)">' +
+        '<div class="person-card-avatar">' + p.name.charAt(0) + '</div>' +
+        '<div class="person-card-info">' +
+          '<div class="person-card-name">' + p.name + '</div>' +
+          '<div class="person-card-meta">' +
+            '<span>📱 ' + phoneHtml + '</span>' +
+            '<span>工号 ' + p.workno + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="person-card-check"></div>' +
+      '</div>';
+    }).join('');
   }
 
-  function hasDescendantMatch(node, searchText) {
-    if (node.name.toLowerCase().includes(searchText)) return true;
-    if (node.children) return node.children.some(child => hasDescendantMatch(child, searchText));
-    return false;
+  function highlightPhone(phone, keyword) {
+    const idx = phone.indexOf(keyword);
+    if (idx === -1) return phone;
+    return phone.substring(0, idx) +
+      '<strong style="color:var(--accent);font-weight:600">' +
+      phone.substring(idx, idx + keyword.length) + '</strong>' +
+      phone.substring(idx + keyword.length);
   }
 
-  function highlightText(text, searchText) {
-    if (!searchText) return text;
-    const idx = text.toLowerCase().indexOf(searchText);
-    if (idx === -1) return text;
-    return text.substring(0, idx) +
-      '<strong style="background:#fef08a;padding:0 2px;border-radius:2px">' +
-      text.substring(idx, idx + searchText.length) + '</strong>' +
-      text.substring(idx + searchText.length);
-  }
+  function selectPersonCard(el) {
+    const id = el.getAttribute('data-id');
+    const person = personData.find(p => p.id === id);
+    if (!person) return;
 
-  function bindOrgEvents() {
-    document.querySelectorAll('#orgTree .org-arrow:not(.placeholder)').forEach(arrow => {
-      arrow.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const id = this.getAttribute('data-id');
-        this.classList.toggle('expanded');
-        const children = document.querySelector('.org-children[data-parent="' + id + '"]');
-        if (children) children.classList.toggle('expanded');
-      });
-    });
-    document.querySelectorAll('#orgTree .org-node-row').forEach(row => {
-      row.addEventListener('click', function() {
-        const node = this.closest('.org-node');
-        if (node.getAttribute('data-type') === 'person') {
-          selectOrgPerson(node);
-        } else {
-          const arrow = this.querySelector('.org-arrow:not(.placeholder)');
-          if (arrow) arrow.click();
-        }
-      });
-    });
-  }
-
-  function selectOrgPerson(node) {
-    document.querySelectorAll('#orgTree .org-node-row.selected').forEach(el => el.classList.remove('selected'));
-    document.querySelectorAll('#orgTree .org-radio.checked').forEach(el => el.classList.remove('checked'));
-    node.querySelector('.org-node-row').classList.add('selected');
-    node.querySelector('.org-radio').classList.add('checked');
-    selectedOrgPerson = { id: node.getAttribute('data-id'), name: node.getAttribute('data-name'), dept: node.getAttribute('data-dept') };
-    document.getElementById('orgSelectedName').textContent = selectedOrgPerson.name + '（' + selectedOrgPerson.dept + '）';
+    document.querySelectorAll('#personCardList .person-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedOrgPerson = { id: person.id, name: person.name, phone: person.phone, workno: person.workno, dept: person.dept };
+    document.getElementById('orgSelectedName').textContent = person.name + '（' + person.phone + ' / ' + person.workno + '）';
     document.getElementById('orgSelectedInfo').classList.add('visible');
-    document.getElementById('orgConfirmBtn').disabled = false;
+    document.getElementById('orgHint').classList.remove('visible');
   }
-
-  function filterOrgTree(value) { renderOrgTree(orgData, value.trim()); }
 
   function confirmOrgSelect() {
-    if (!selectedOrgPerson || !currentAssignId) return;
+    if (!selectedOrgPerson || !currentAssignId) {
+      document.getElementById('orgHint').classList.add('visible');
+      return;
+    }
     const row = tableData.find(r => r.id === currentAssignId);
     if (row) {
       row.extName = selectedOrgPerson.name;
-      row.extMobile = '—';
-      row.extWorkno = '—';
+      row.extMobile = selectedOrgPerson.phone;
+      row.extWorkno = selectedOrgPerson.workno;
       row.status = 'success';
       row.syncTime = formatNow();
     }
